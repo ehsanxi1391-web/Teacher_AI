@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Settings {
+  id        Int      @id @default(1)
+  apiKey    String   @default("")
+  apiBase   String   @default("")
+  model     String   @default("gpt-4o-mini")
+  language  String   @default("fa")
+  grade     String   @default("")
+  onboarded Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+model Book {
+  id        Int      @id @default(autoincrement())
+  title     String
+  subject   String
+  grade     String
+  status    String   @default("processing")
+  error     String?
+  pages     Page[]
+  lessons   Lesson[]
+  createdAt DateTime @default(now())
+}
+
+model Page {
+  id      Int    @id @default(autoincrement())
+  bookId  Int
+  book    Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  number  Int
+  content String
+}
+
+model Lesson {
+  id      Int    @id @default(autoincrement())
+  bookId  Int
+  book    Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  index   Int
+  title   String
+  pages   String @default("")
+  topics  String @default("[]")
+  summary String @default("")
+}
+
+model ChatThread {
+  id        String   @id
+  bookId    Int?
+  label     String   @default("")
+  messages  String   @default("[]")
+  updatedAt DateTime @updatedAt
+}
+
+model GeneratedTest {
+  id        String   @id @default(cuid())
+  grade     String
+  subject   String
+  topic     String
+  mode      String   @default("topic")
+  title     String   @default("")
+  data      String   @default("[]")
+  createdAt DateTime @default(now())
+}

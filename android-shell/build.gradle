@@ -1,0 +1,5 @@
+// Root build file — Tarven Android WebView shell.
+// Plain Java (no Kotlin plugin needed) to keep the shell as small as possible.
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}

@@ -1,0 +1,20 @@
+pluginManagement {
+    repositories {
+        // Required: AGP is published on Google's Maven repository.
+        google()
+        mavenCentral()
+        // Fallback for any third-party Gradle plugins.
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "Tarven"
+include ':app'

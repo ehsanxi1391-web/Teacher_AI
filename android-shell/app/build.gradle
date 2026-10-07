@@ -1,0 +1,35 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.tarven.tutor'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.tarven.tutor"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Debug signing is used for now so `assembleRelease` works without
+            // configuring a real keystore. Swap for a proper signingConfig
+            // before publishing to a store.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// No external dependencies: MainActivity uses only framework APIs
+// (android.app.Activity + WebView), so the shell stays tiny.
