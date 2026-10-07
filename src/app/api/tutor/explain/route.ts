@@ -50,13 +50,16 @@ export async function POST(req: NextRequest) {
         { role: "user", content: first },
         { role: "assistant", content: reply },
       ];
-    } else {
+    } else if (message) {
       const reply = await aiChat([
         { role: "system", content: sys },
         ...history.map((m) => ({ role: m.role, content: m.content })),
         { role: "user", content: message },
       ]);
       newMessages = [...history, { role: "user", content: message }, { role: "assistant", content: reply }];
+    } else {
+      // Resume: return the stored conversation without calling the AI.
+      newMessages = history;
     }
 
     await db.chatThread.upsert({
