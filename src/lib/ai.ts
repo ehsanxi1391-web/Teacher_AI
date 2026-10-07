@@ -13,34 +13,69 @@ async function getSettings() {
 }
 
 /**
+ * Normalizes a user-supplied OpenAI-compatible base URL:
+ * - fixes typos like "https//host" (missing colon)
+ * - strips trailing slashes
+ * - appends "/v1" when only a bare host is given
+ * Throws a friendly error if the result is still not a valid URL.
+ */
+export function normalizeApiBase(raw: string): string {
+  let base = (raw || "https://api.openai.com/v1").trim().replace(/\/+$/, "");
+  base = base.replace(/^(https?)\/\//i, "$1://"); // missing colon typo
+  try {
+    const u = new URL(base);
+    if (!u.pathname || u.pathname === "/") base = `${u.origin}/v1`;
+  } catch {
+    throw new Error(
+      `Invalid API Base URL: "${raw}". Example: https://api.openai.com/v1`,
+    );
+  }
+  return base;
+}
+
+/**
  * Sends a chat completion request. If the user configured an OpenAI-compatible
- * API key, that provider is used; otherwise the built-in demo AI (z-ai SDK).
+ * API key, that provider is tried first; if it fails for any reason (bad URL,
+ * quota, region block, network) the request silently falls back to the
+ * built-in demo AI (z-ai SDK) so the tutor never hard-fails.
  */
 export async function aiChat(messages: ChatMsg[]): Promise<string> {
   const s = await getSettings();
   const key = (s.apiKey || "").trim();
 
   if (key && key.toUpperCase() !== "DEMO") {
-    const base = (s.apiBase || "https://api.openai.com/v1").replace(/\/+$/, "");
-    const res = await fetch(`${base}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model: s.model || "gpt-4o-mini",
-        messages,
-        temperature: 0.4,
-      }),
-    });
-    if (!res.ok) {
-      throw new Error(`AI provider error ${res.status}`);
+    try {
+      const base = normalizeApiBase(s.apiBase || "https://api.openai.com/v1");
+      const res = await fetch(`${base}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: s.model || "gpt-4o-mini",
+          messages,
+          temperature: 0.4,
+        }),
+      });
+      if (!res.ok) {
+        const detail = (await res.json().catch(() => null)) as
+          | { error?: { message?: string } }
+          | null;
+        console.error(
+          `[ai] custom provider failed (${res.status}): ${detail?.error?.message ?? "unknown"} — falling back to demo AI`,
+        );
+      } else {
+        const json = (await res.json()) as {
+          choices?: { message?: { content?: string } }[];
+        };
+        return json.choices?.[0]?.message?.content ?? "";
+      }
+    } catch (err) {
+      console.error(
+        `[ai] custom provider unreachable: ${String((err as Error)?.message || err)} — falling back to demo AI`,
+      );
     }
-    const json = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    return json.choices?.[0]?.message?.content ?? "";
   }
 
   // Built-in demo AI — the SDK expects the system prompt as the first
@@ -54,6 +89,55 @@ export async function aiChat(messages: ChatMsg[]): Promise<string> {
     thinking: { type: "disabled" },
   });
   return completion.choices[0]?.message?.content ?? "";
+}
+
+/**
+ * Explicitly probes the configured custom provider with a 1-token request.
+ * Used by POST /api/settings/test so users can verify their key/base/model.
+ */
+export async function testProvider(): Promise<{
+  provider: "custom" | "demo";
+  ok: boolean;
+  model?: string;
+  error?: string;
+}> {
+  const s = await getSettings();
+  const key = (s.apiKey || "").trim();
+  const model = s.model || "gpt-4o-mini";
+  if (!key || key.toUpperCase() === "DEMO") {
+    return { provider: "demo", ok: true, model: "built-in" };
+  }
+  try {
+    const base = normalizeApiBase(s.apiBase || "https://api.openai.com/v1");
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: "ping" }],
+        max_tokens: 1,
+      }),
+    });
+    if (!res.ok) {
+      const detail = (await res.json().catch(() => null)) as
+        | { error?: { message?: string } }
+        | null;
+      return {
+        provider: "custom",
+        ok: false,
+        model,
+        error: detail?.error?.message || `HTTP ${res.status}`,
+      };
+    }
+    return { provider: "custom", ok: true, model };
+  } catch (err) {
+    return {
+      provider: "custom",
+      ok: false,
+      model,
+      error: String((err as Error)?.message || err),
+    };
+  }
 }
 
 export interface SearchResultItem {

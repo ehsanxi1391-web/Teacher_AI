@@ -187,6 +187,14 @@ export const dict = {
   modelLabel: { fa: "نام مدل", en: "Model name" },
   saveSettings: { fa: "ذخیره تنظیمات", en: "Save settings" },
   saved: { fa: "ذخیره شد ✔", en: "Saved ✔" },
+  testConn: { fa: "تست اتصال", en: "Test connection" },
+  testing: { fa: "در حال تست…", en: "Testing…" },
+  testOk: { fa: "اتصال به سرویس شما موفق بود ✔", en: "Your AI provider works ✔" },
+  testDemo: {
+    fa: "کلیدی ست نشده — هوش مصنوعی دمو استفاده می‌شود.",
+    en: "No key set — the built-in demo AI will be used.",
+  },
+  testFail: { fa: "اتصال ناموفق — از هوش مصنوعی دمو استفاده می‌شود:", en: "Connection failed — the demo AI will be used:" },
   dangerZone: { fa: "منطقه خطر", en: "Danger zone" },
   resetAll: { fa: "پاک کردن همه داده‌ها", en: "Erase all data" },
   resetConfirm: {
@@ -195,8 +203,8 @@ export const dict = {
   },
   resetDone: { fa: "همه داده‌ها پاک شد.", en: "All data erased." },
   providerNote: {
-    fa: "اگر کلید API ست شده باشد از سرویس خودت استفاده می‌شود؛ وگرنه هوش مصنوعی دمو.",
-    en: "If an API key is set, your own provider is used; otherwise the demo AI.",
+    fa: "اگر کلید API ست شده باشد از سرویس خودت استفاده می‌شود؛ اگر سرویس در دسترس نباشد، خودکار به هوش مصنوعی دمو برمی‌گردیم تا برنامه همیشه کار کند.",
+    en: "If an API key is set, your own provider is used; if it is unreachable, the app automatically falls back to the demo AI so it always works.",
   },
   about: { fa: "درباره", en: "About" },
   aboutText: {

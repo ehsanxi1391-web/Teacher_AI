@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Eye, EyeOff, Trash2, Info } from "lucide-react";
+import { Save, Eye, EyeOff, Trash2, Info, PlugZap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +31,7 @@ export default function SettingsScreen() {
   const [showKey, setShowKey] = useState(false);
   const [hasKey, setHasKey] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
 
   useEffect(() => {
@@ -70,6 +71,27 @@ export default function SettingsScreen() {
       toast.error(t("errorGeneric"));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const testConn = async () => {
+    setTesting(true);
+    try {
+      // Save current fields first so the test reflects what is on screen.
+      await save();
+      const r = await fetch("/api/settings/check", { method: "POST" });
+      const d = (await r.json()) as { provider: string; ok: boolean; error?: string };
+      if (d.provider === "demo") {
+        toast.info(t("testDemo"));
+      } else if (d.ok) {
+        toast.success(t("testOk"));
+      } else {
+        toast.error(`${t("testFail")} ${d.error ?? ""}`.slice(0, 160));
+      }
+    } catch {
+      toast.error(t("errorGeneric"));
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -179,10 +201,16 @@ export default function SettingsScreen() {
               <Info className="size-3.5 shrink-0 mt-0.5" />
               {t("providerNote")}
             </p>
-            <Button className="w-full min-h-12" onClick={() => save()} disabled={saving}>
-              <Save className="size-4" />
-              {t("saveSettings")}
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" className="w-full min-h-12" onClick={testConn} disabled={testing || saving}>
+                <PlugZap className="size-4" />
+                {testing ? t("testing") : t("testConn")}
+              </Button>
+              <Button className="w-full min-h-12" onClick={() => save()} disabled={saving || testing}>
+                <Save className="size-4" />
+                {t("saveSettings")}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
